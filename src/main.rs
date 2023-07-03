@@ -1,5 +1,5 @@
 use image::{ImageBuffer, Rgba, RgbaImage};
-use imageproc::{self, rect::Rect, drawing::Canvas, point::Point};
+use imageproc::{self, drawing::Canvas, point::Point, rect::Rect};
 use macroquad::prelude::*;
 
 const DRAW_COLOR: [u8; 4] = [88, 96, 117, 255];
@@ -20,7 +20,7 @@ fn config_window() -> Conf {
         window_width: 800,
         window_height: 600,
         ..Conf::default()
-    } 
+    }
 }
 
 fn render(mode: Mode, game_state: &mut GameState) {
@@ -52,22 +52,38 @@ fn render(mode: Mode, game_state: &mut GameState) {
                         mouse_y,
                         game_state.add_radius,
                         1.,
-                        Color::from_rgba(DRAW_COLOR[0] + 50, DRAW_COLOR[1] + 50, DRAW_COLOR[2] + 50, DRAW_COLOR[3])
+                        Color::from_rgba(
+                            DRAW_COLOR[0] + 50,
+                            DRAW_COLOR[1] + 50,
+                            DRAW_COLOR[2] + 50,
+                            DRAW_COLOR[3],
+                        ),
                     );
-                },
+                }
                 DrawMode::Remove => {
                     draw_circle_lines(
                         mouse_x,
                         mouse_y,
                         game_state.remove_radius,
                         1.,
-                        Color::from_rgba(DRAW_COLOR[0] - 50, DRAW_COLOR[1] - 50, DRAW_COLOR[2] - 50, DRAW_COLOR[3])
+                        Color::from_rgba(
+                            DRAW_COLOR[0] - 50,
+                            DRAW_COLOR[1] - 50,
+                            DRAW_COLOR[2] - 50,
+                            DRAW_COLOR[3],
+                        ),
                     );
-                },
+                }
             };
 
             // Render the UI
-            draw_text("Create Mode", 6., 35., 50., Color::from_rgba(237, 229, 76, 235));
+            draw_text(
+                "Create Mode",
+                6.,
+                35.,
+                50.,
+                Color::from_rgba(237, 229, 76, 235),
+            );
             draw_text(
                 "[Space] to Change Modes",
                 6.,
@@ -103,7 +119,6 @@ fn render(mode: Mode, game_state: &mut GameState) {
                 18.,
                 Color::from_rgba(203, 206, 209, 140),
             );
-            
 
             draw_text(
                 "Scroll to change tool sizes.",
@@ -206,12 +221,16 @@ fn draw_rounded_line(
     let corner3 = pos2_vec - line_perp * width / 2.;
     let corner4 = pos2_vec + line_perp * width / 2.;
 
-    imageproc::drawing::draw_polygon_mut(image, &[
-        Point::new(corner1.x as i32, corner1.y as i32),
-        Point::new(corner2.x as i32, corner2.y as i32),
-        Point::new(corner3.x as i32, corner3.y as i32),
-        Point::new(corner4.x as i32, corner4.y as i32)
-    ], color);
+    imageproc::drawing::draw_polygon_mut(
+        image,
+        &[
+            Point::new(corner1.x as i32, corner1.y as i32),
+            Point::new(corner2.x as i32, corner2.y as i32),
+            Point::new(corner3.x as i32, corner3.y as i32),
+            Point::new(corner4.x as i32, corner4.y as i32),
+        ],
+        color,
+    );
 
     // let num_steps = (pos2_vec - pos1_vec).length() as i32;
 
@@ -245,8 +264,7 @@ fn flood_fill(
     let mut frontier = vec![start_pos];
 
     // Keep going until algo can't find more unfilled pixels
-    while frontier.len() > 0 {
-
+    while !frontier.is_empty() {
         let (x, y) = frontier.pop().unwrap();
         let this_color = *create_canvas.get_pixel(x, y);
 
@@ -281,8 +299,15 @@ fn handle_create_logic(
 ) {
     // Handle brush resizing logic
     match game_state.draw_mode {
-        DrawMode::Add => game_state.add_radius = (game_state.add_radius + TOOL_SIZING_FACTOR * mouse_wheel().1).clamp(MIN_TOOL_RADIUS, MAX_TOOL_RADIUS),
-        DrawMode::Remove => game_state.remove_radius = (game_state.remove_radius + TOOL_SIZING_FACTOR * mouse_wheel().1).clamp(MIN_TOOL_RADIUS, MAX_TOOL_RADIUS),
+        DrawMode::Add => {
+            game_state.add_radius = (game_state.add_radius + TOOL_SIZING_FACTOR * mouse_wheel().1)
+                .clamp(MIN_TOOL_RADIUS, MAX_TOOL_RADIUS)
+        }
+        DrawMode::Remove => {
+            game_state.remove_radius = (game_state.remove_radius
+                + TOOL_SIZING_FACTOR * mouse_wheel().1)
+                .clamp(MIN_TOOL_RADIUS, MAX_TOOL_RADIUS)
+        }
     };
 
     // Brush switching
@@ -319,10 +344,16 @@ fn handle_create_logic(
 
             let draw_info = match game_state.draw_mode {
                 DrawMode::Add => (game_state.add_radius, Rgba(DRAW_COLOR)),
-                DrawMode::Remove => (game_state.remove_radius, Rgba([0, 0, 0, 0]))
+                DrawMode::Remove => (game_state.remove_radius, Rgba([0, 0, 0, 0])),
             };
 
-            draw_rounded_line(create_canvas, last_pos, new_pos, 2. * draw_info.0, draw_info.1);
+            draw_rounded_line(
+                create_canvas,
+                last_pos,
+                new_pos,
+                2. * draw_info.0,
+                draw_info.1,
+            );
         }
         game_state.was_drawing = true;
         // Update last position that was drawn to. (for filling gaps between mouse jumps)
@@ -352,7 +383,7 @@ async fn main() {
         let t = Texture2D::from_rgba8(
             create_canvas.width() as u16,
             create_canvas.height() as u16,
-            &create_canvas.to_vec(),
+            &create_canvas,
         );
         draw_texture(t, 0., 0., Color::from_rgba(255, 255, 255, 255));
 
