@@ -1,0 +1,53 @@
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+name: CI
+
+jobs:
+  ci:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+
+      - name: Check out
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Set up Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Install Tarpaulin
+        if: matrix.os == 'ubuntu-latest'
+        continue-on-error: true
+        run: cargo install cargo-tarpaulin
+
+      - name: Run Cargo:fmt
+        run: cargo fmt --all -- --check
+
+      - name: Run Cargo:clippy
+        run: cargo clippy --all-features -- -D warnings
+
+      - name: Run Cargo:test
+        run: cargo test --verbose --all-features
+
+      - name: Run Cargo:tarpaulin
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo tarpaulin --verbose --all-features --out Xml --output-dir ./coverage
